@@ -1,0 +1,19 @@
+AWP - AWS Which Profile
+
+BASIC FUNC
+
+First arg
+Type of profile
+e.g. firm, app, res, legacy,
+
+Second arg
+Identifier of profile
+Begin with verbatims e.g. F100630/voya, shared-services, legacy, application-live
+Then add some manual short names myself
+Later use something fuzzy to resolve any short name
+
+MAYBE FUNC
+
+Option to pull the latest AWS configs from the machine-build repo?
+(if it's being run by an ea cli user, they will probably have git access)
+
