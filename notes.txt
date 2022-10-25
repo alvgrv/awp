@@ -12,8 +12,19 @@ Begin with verbatims e.g. F100630/voya, shared-services, legacy, application-liv
 Then add some manual short names myself
 Later use something fuzzy to resolve any short name
 
-MAYBE FUNC
-
+LATER
 Option to pull the latest AWS configs from the machine-build repo?
 (if it's being run by an ea cli user, they will probably have git access)
+Could do something that prints the aws login url for a profile to stdout
 
+
+command examples
+
+awp live app
+awp firm voya
+awp test res
+awp firm f100630
+awp cust f100630
+awp legacy
+awp shared
+awp firm voya admin
