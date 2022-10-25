@@ -15,7 +15,6 @@ profiles = [p.split(" ")[1].lower() for p in cp.sections() if p.startswith("prof
 profiles = [
     {
         "id": p,
-        "admin_id": p + "_admin",
         "type": "firm"
         if "cust" in p
         else "legacy"
@@ -23,23 +22,31 @@ profiles = [
         else "res"
         if "res" in p
         else "app",
+        "admin": True if "admin" in p else False,
     }
     for p in profiles
-    if "admin" not in p
 ]
+admin_profiles = [p for p in profiles if p["admin"]]
+
 
 # keywords in profile names
-ONE_WORD_SEARCHES = ["shared", "legacy", "log", "security"]
+ONE_WORD_SEARCHES = ["shared", "primary", "legacy", "log", "security"]
 # keywords in user input
 FIRM_SEARCHTERMS = ["cust", "customer", "client", "firm"]
+FIRM_MAP = {}
 
 parser = argparse.ArgumentParser(description="Switch AWS profiles like a pro")
 parser.add_argument("keywords", nargs="*", help="Key word(s) in the profile name")
 args = parser.parse_args()
 keywords = args.keywords
 
+if "admin" in keywords:
+    keywords.remove("admin")
+    profiles = admin_profiles
+
 if len(keywords) == 1 and keywords[0] in ONE_WORD_SEARCHES:
     print([p["id"] for p in profiles if keywords[0] in p["id"]])
+
 
 # if firm search
 if any(k in FIRM_SEARCHTERMS for k in keywords):
@@ -63,3 +70,9 @@ elif "res" in keywords:
 # ]
 #
 # print(possible_profiles[0]["id"])
+
+
+# next
+# add firm key to name map
+# add admin stuff
+# shared isn't a one word search with admin in there
