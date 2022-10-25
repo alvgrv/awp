@@ -29,23 +29,37 @@ profiles = [
 ]
 
 # keywords in profile names
-APP_KEYWORDS = ["app", "shared", "primary", "log", "security"]
-RES_KEYWORDS = ["res"]
-FIRM_KEYWORDS = ["cust"]
-LEGACY_KEYWORDS = ["legacy"]
+ONE_WORD_SEARCHES = ["shared", "legacy", "log", "security"]
 # keywords in user input
 FIRM_SEARCHTERMS = ["cust", "customer", "client", "firm"]
 
 parser = argparse.ArgumentParser(description="Switch AWS profiles like a pro")
-parser.add_argument("type", help="Type of profile: app, firm or legacy")
 parser.add_argument("keywords", nargs="*", help="Key word(s) in the profile name")
 args = parser.parse_args()
-if args.type in FIRM_SEARCHTERMS:
-    args.type = "firm"
-possible_profiles = [p for p in profiles if p["type"] == args.type]
-input_keywords = args.keywords
-possible_profiles = [
-    p for p in possible_profiles if any(k in p["id"] for k in input_keywords)
-]
+keywords = args.keywords
 
-print(possible_profiles[0]["id"])
+if len(keywords) == 1 and keywords[0] in ONE_WORD_SEARCHES:
+    print([p["id"] for p in profiles if keywords[0] in p["id"]])
+
+# if firm search
+if any(k in FIRM_SEARCHTERMS for k in keywords):
+    keywords = [k for k in keywords if k not in FIRM_SEARCHTERMS]
+    print([p["id"] for p in profiles if any(k in p["id"] for k in keywords)][0])
+# if app search
+elif "app" in keywords:
+    keywords.remove("app")
+    print([p["id"] for p in profiles if any(k in p["id"] for k in keywords)][0])
+elif "res" in keywords:
+    keywords.remove("res")
+    print([p["id"] for p in profiles if any(k in p["id"] for k in keywords)][0])
+
+#
+# if args.type in FIRM_SEARCHTERMS:
+#     args.type = "firm"
+# possible_profiles = [p for p in profiles if p["type"] == args.type]
+# input_keywords = args.keywords
+# possible_profiles = [
+#     p for p in possible_profiles if any(k in p["id"] for k in input_keywords)
+# ]
+#
+# print(possible_profiles[0]["id"])
