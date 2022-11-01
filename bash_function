@@ -1,0 +1,3 @@
+function awp {
+  eval `~/essentia/dev/awp/main.py $@`
+}

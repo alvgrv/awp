@@ -1,7 +1,16 @@
+#!/usr/bin/env python3
+
 import argparse
 import configparser
 import os
+import sys
 from difflib import get_close_matches
+
+
+def activate_profile(profile):
+    sys.stdout.write(f'export AWS_PROFILE="{profile}"')
+    sys.stdout.flush()
+    sys.exit()
 
 
 firm_key_map = {
@@ -82,28 +91,35 @@ if "admin" in keywords:
     keywords.remove("admin")
     profiles = admin_profiles
 
+# if "web" in keywords:
+#     keywords.remove("admin")
+#     # TODO print web login
+
 if len(keywords) == 1:
     keyword = keywords[0]
+
     if keyword in firm_keys:
         keyword = key_firm_map[keyword]
+
     if keyword in ONE_WORD_SEARCHES:
-        print([p for p in profiles if keyword in p][0])
+        activate_profile([p for p in profiles if keyword in p][0])
+    else:
+        print(f"echo 'Error - Too few keywords used'")
+        sys.exit()  # todo parser.exit
 
 
 # if firm search
 if any(k in FIRM_SEARCHTERMS for k in keywords):
     keywords = [k for k in keywords if k not in FIRM_SEARCHTERMS]
-    print([p for p in profiles if any(k in p for k in keywords)][0])
+    activate_profile([p for p in profiles if any(k in p for k in keywords)][0])
+
+
 # if app search
 elif "app" in keywords:
     keywords.remove("app")
-    print([p for p in profiles if any(k in p for k in keywords)][0])
+    activate_profile([p for p in profiles if any(k in p for k in keywords)][0])
 elif "res" in keywords:
     keywords.remove("res")
-    print([p for p in profiles if any(k in p for k in keywords)][0])
-
-
-# next
-# add firm key to name map
-# add admin stuff
-# shared isn't a one word search with admin in there
+    activate_profile([p for p in profiles if any(k in p for k in keywords)][0])
+else:
+    print("echo 'Error - No result found for your keywords'")

@@ -28,3 +28,13 @@ awp cust f100630
 awp legacy
 awp shared
 awp firm voya admin
+awp --web firm voya
+
+
+FLOW
+
+Command entered
+Contains admin? Limit results to admin profiles and pop admin from keywords
+Len(keywords)=1? Search one-word searches for that keyword
+    If found, set profile. If not, return error message
+Else
