@@ -21,14 +21,13 @@ Could do something that prints the aws login url for a profile to stdout
 command examples
 
 awp live app
-awp firm voya
+awp voya
 awp test res
-awp firm f100630
-awp cust f100630
+awp f100630
+awp f100630
 awp legacy
 awp shared
 awp firm voya admin
-awp --web firm voya
 
 
 FLOW

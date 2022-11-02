@@ -65,7 +65,9 @@ cp = configparser.ConfigParser()
 user = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
 # cp.read(f"/Users/{user}/.aws/config")
 cp.read(
-    f"/Users/{user}/essentia/machine-build/roles/dev_machine/files/dotfiles/aws/config"
+    os.path.expanduser(
+        "~/essentia/machine-build/roles/dev_machine/files/dotfiles/aws/config"
+    )
 )
 
 profiles = [p.split(" ")[1].lower() for p in cp.sections() if p.startswith("profile")]
