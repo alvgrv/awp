@@ -1,39 +1,15 @@
 AWP - AWS Which Profile
 
-BASIC FUNC
 
-First arg
-Type of profile
-e.g. firm, app, res, legacy,
+OOP MVP now written
 
-Second arg
-Identifier of profile
-Begin with verbatims e.g. F100630/voya, shared-services, legacy, application-live
-Then add some manual short names myself
-Later use something fuzzy to resolve any short name
-
-LATER
-Option to pull the latest AWS configs from the machine-build repo?
-(if it's being run by an ea cli user, they will probably have git access)
-Could do something that prints the aws login url for a profile to stdout
+TO DO
+- Write install script
+- Add functionality to print an AWS login link to stdout
 
 
-command examples
+bash function
 
-awp live app
-awp voya
-awp test res
-awp f100630
-awp f100630
-awp legacy
-awp shared
-awp firm voya admin
-
-
-FLOW
-
-Command entered
-Contains admin? Limit results to admin profiles and pop admin from keywords
-Len(keywords)=1? Search one-word searches for that keyword
-    If found, set profile. If not, return error message
-Else
+function awp {
+  eval `~/essentia/dev/awp/awp.py $@`
+}
