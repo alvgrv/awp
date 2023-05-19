@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import sys
 import configparser
@@ -77,6 +79,11 @@ class ProfileSwitcher:
         sys.stdout.flush()
         sys.exit()
 
+    def unset_profile(self):
+        sys.stdout.write(f'unset AWS_PROFILE')
+        sys.stdout.flush()
+        sys.exit()
+
     def return_fail_message(self):
         print(
             f"echo 'Your entered profile name {self.user_entry} did not match a profile.'"
@@ -84,6 +91,9 @@ class ProfileSwitcher:
         sys.exit()
 
     def run(self):
+        if self.user_entry == 'unset':
+            self.unset_profile()
+
         matched_profile = None
 
         try:
