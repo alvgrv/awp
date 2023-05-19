@@ -7,9 +7,7 @@ import re
 from typing import Optional
 
 cp = configparser.ConfigParser()
-
 user = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
-# cp.read(f"/Users/{user}/.aws/config")
 cp.read(f"/Users/{user}/.aws/config")
 
 
