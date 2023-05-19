@@ -2,7 +2,7 @@ import os
 
 user = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
 
-file_path = f"/Users/{user}/.aws/config"
+file_path = f"/Users/{user}/.zshrc"
 with open(file_path, "r+") as file:
     lines = file.readlines()
 
@@ -17,9 +17,11 @@ with open(file_path, "r+") as file:
             break
 
     if not found_line_1:
+        file.write("\n")
         file.write(line_1)
         file.write(line_2)
         file.write(line_3)
-        print("Lines written to the file.")
+        file.write("\n")
+        print("awp was successfully installed to your .zshrc file")
     else:
-        print("Line 1 already exists in the file.")
+        print("awp is already installed in your .zshrc file")
