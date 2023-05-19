@@ -6,6 +6,7 @@ OOP MVP now written
 TO DO
 - Write install script
 - Add functionality to print an AWS login link to stdout
+- Add 'unset' functionality
 
 
 bash function
@@ -13,3 +14,26 @@ bash function
 function awp {
   eval `~/essentia/dev/awp/awp.py $@`
 }
+
+
+what is the new interface going to be?
+
+awp live-app
+
+awp shared
+
+awp legacy
+
+awp -a live-app
+
+awp brown
+
+awp f100060
+
+awp F100060
+
+awp -c brown (will return a login link for the console)
+
+awp login
+
+awp
