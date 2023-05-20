@@ -8,19 +8,10 @@ import os
 import re
 from typing import Optional
 
-cp = configparser.ConfigParser()
-user = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
-cp.read(f"/Users/{user}/.aws/config")
-
-
-unique_profile_names = {
-    p.split(" ")[1].replace("_admin", "")
-    for p in cp.sections()
-    if p.startswith("profile")
-}
-
 
 class AwsConfig:
+    USER = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
+
     @dataclasses.dataclass
     class AwsProfile:
         """Dataclass representing an AWS Profile stored in ~/.aws/config.
@@ -39,16 +30,23 @@ class AwsConfig:
         account_name: str
 
     def __init__(self):
+        self.parser = configparser.ConfigParser()
+        self.parser.read(f"/Users/{self.USER}/.aws/config")
+        self.unique_profile_names = {
+            p.split(" ")[1].replace("_admin", "")
+            for p in self.parser.sections()
+            if p.startswith("profile")
+        }
         self.profiles = [
             self.AwsProfile(
                 profile_name=profile,
                 admin_profile_name=f"{profile}_admin",
-                account_name=cp.get(f"profile {profile}", "name"),
+                account_name=self.parser.get(f"profile {profile}", "name"),
                 firm_id=re.search(r"([TSFtsf]\d{6})", profile).group(0)
                 if "cust" in profile
                 else None,
             )
-            for profile in unique_profile_names
+            for profile in self.unique_profile_names
         ]
 
 
@@ -56,31 +54,44 @@ class ProfileSwitcher:
     def __init__(self):
         self.config = AwsConfig()
         self.profiles = self.config.profiles
-        self.profile_account_names = [p.account_name for p in self.profiles]
         self.profile_account_name_map = {p.account_name: p for p in self.profiles}
-        self.profile_firm_ids = [p.firm_id for p in self.profiles]
         self.profile_firm_id_name_map = {p.firm_id: p for p in self.profiles}
         self.parser = argparse.ArgumentParser(
-            description="Switch AWS profiles like a pro. Enter a short form of the profile name and "
+            description="Switch AWS profiles like a pro.", add_help=False  # TODO fix
         )
         self.parser.add_argument(
             "profile_name",
             nargs="?",
             help="A short profile name e.g. brown, f100060, testres1, live-app, shared",
         )
-        # TODO add admin arg
+        self.parser.add_argument(
+            "-a",
+            "--admin",
+            action="store_true",
+            help="Switches to the admin version of the profile",
+        )
+        self.parser.add_argument(
+            "-h",
+            "--help",
+            action="store_true",
+            help="Prints this page",
+        )
+
         # TODO add console arg
         # TODO add login arg
-        self.user_entry = self.parser.parse_args().profile_name
+        # todo split parser into own wrapper object
+        self.args = self.parser.parse_args()
+        self.user_entry = self.args.profile_name
+        self.is_admin = self.args.admin
 
-    @staticmethod
-    def activate_profile(profile):
-        sys.stdout.write(f'export AWS_PROFILE="{profile.profile_name}"')
+    def activate_profile(self, profile):
+        profile = profile.admin_profile_name if self.is_admin else profile.profile_name
+        sys.stdout.write(f'export AWS_PROFILE="{profile}"')
         sys.stdout.flush()
         sys.exit()
 
     def unset_profile(self):
-        sys.stdout.write(f'unset AWS_PROFILE')
+        sys.stdout.write(f"unset AWS_PROFILE")
         sys.stdout.flush()
         sys.exit()
 
@@ -90,22 +101,26 @@ class ProfileSwitcher:
         )
         sys.exit()
 
+    def return_help_message(self):
+        pass  # TODO
+
     def run(self):
-        if self.user_entry == 'unset':
+        if self.user_entry == "unset":
             self.unset_profile()
 
         matched_profile = None
-
         try:
             if re.match(r"([TSFtsf]\d{6})", self.user_entry):
                 matched_firm_id = [
-                    id for id in self.profile_firm_ids if self.user_entry.upper() == id
+                    id
+                    for id in self.profile_firm_id_name_map.keys()
+                    if self.user_entry.upper() == id
                 ][0]
                 matched_profile = self.profile_firm_id_name_map.get(matched_firm_id)
             else:
                 matched_account_name = [
                     name
-                    for name in self.profile_account_names
+                    for name in self.profile_account_name_map.keys()
                     if self.user_entry in name
                 ][0]
                 matched_profile = self.profile_account_name_map.get(
@@ -121,5 +136,6 @@ class ProfileSwitcher:
 
 
 if __name__ == "__main__":
-    profile_switcher = ProfileSwitcher()
-    profile_switcher.run()
+    # todo context mgr for sys exit
+
+    ProfileSwitcher().run()
