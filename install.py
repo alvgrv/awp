@@ -1,3 +1,19 @@
+"""Installer for the `awp` command line utility.
+
+Python scripts cannot set environment variables in the parent shell, so this script installs a function in the
+    user's ~/.zshrc file which evaluates the output of the script awp.py and applies it to the parent shell
+
+If the function already exists in ~/.zshrc, no action is taken.
+
+The .zsh function is as follows:
+```
+function awp {
+  eval `~/essentia/awp/awp.py $@`
+}
+```
+
+"""
+
 import os
 
 user = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
@@ -7,7 +23,7 @@ with open(file_path, "r+") as file:
     lines = file.readlines()
 
     line_1 = "function awp {\n"
-    line_2 = "  eval `~/essentia/awp/main.py $@`\n"
+    line_2 = "  eval `~/essentia/awp/awp.py $@`\n"
     line_3 = "}\n"
 
     found_line_1 = False

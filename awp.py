@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO edit machine build script adding client names to aws config file
 """This command line utility makes it easy to switch between AWS profiles on the command line.
 
 usage: awp [-a] [profile_name]
@@ -9,14 +10,19 @@ positional arguments:
 optional arguments:
   -a, --admin   Switches to the admin version of the profile
 
+example usage:
+`awp`  # deactivates any profile that is active
+`awp brown`  # activates the brown profile
+`awp shared`  # activates the shared-services profile
+`awp -a f100530`  # activates the admin version of the ab profile
+
 # TODO add --console/-c flag that prints a link to switch to this profile in the AWS Console
 # TODO add --list/-l  flag that prints the list of unique profile names in order
 """
 
-
-import argparse
-import configparser
-import dataclasses
+from argparse import ArgumentParser
+from configparser import ConfigParser
+from dataclasses import dataclass
 import os
 import re
 import sys
@@ -28,7 +34,7 @@ class AwsConfig:
 
     USER = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
 
-    @dataclasses.dataclass
+    @dataclass
     class AwsProfile:
         """Dataclass representing an AWS Profile stored in ~/.aws/config.
 
@@ -46,7 +52,7 @@ class AwsConfig:
 
     def __init__(self):
         """Parse the ~/.aws/config file."""
-        self.parser = configparser.ConfigParser()
+        self.parser = ConfigParser()
         self.parser.read(f"/Users/{self.USER}/.aws/config")
         self.unique_profile_names = {
             p.split(" ")[1].replace("_admin", "")
@@ -59,7 +65,7 @@ class AwsConfig:
                 admin_profile_name=f"{profile}_admin",
                 account_name=self.parser.get(f"profile {profile}", "name"),
                 # fmt: off
-                firm_id=re.search(r"([TSFtsf]\d{6})", profile).group(0) if "cust" in profile else None,
+                firm_id=re.search(r"([TSF]\d{6})", profile).group(0) if "cust" in profile else None,
                 # fmt: on
             )
             for profile in self.unique_profile_names
@@ -73,9 +79,7 @@ class ProfileSwitcher:
         """Wrapper for Python stdlib argparse."""
 
         def __init__(self):
-            self.parser = argparse.ArgumentParser(
-                description="Switch AWS profiles like a pro."
-            )
+            self.parser = ArgumentParser(description="Switch AWS profiles like a pro.")
             self.parser.add_argument(
                 "profile_name",
                 nargs="?",
@@ -92,7 +96,7 @@ class ProfileSwitcher:
             self.is_admin = self.args.admin
 
     def __init__(self, config):
-        """Initialise the class with the user's AwsConfig ."""
+        """Initialise the class with the user's AwsConfig."""
         self.config = config
         self.profile_account_name_map = {
             p.account_name: p for p in self.config.profiles
@@ -105,6 +109,13 @@ class ProfileSwitcher:
         """Returns a message to stdout which is picked up by the eval function in .zshrc."""
         sys.stdout.write(message)
         sys.exit()
+
+    @staticmethod
+    def is_firm_id(string):
+        """Return bool if string contains a firm id e.g. f100060, T100580."""
+        if re.match(r"([TSFtsf]\d{6})", string):
+            return True
+        return False
 
     def activate_profile(self, profile):
         """Given an AwsProfile object, activate that profile in the user's terminal by setting the env var."""
@@ -128,7 +139,7 @@ class ProfileSwitcher:
     def match_profile(self):
         """Given the user input, attempt to match it to a profile in the ~/.aws/config file."""
         try:
-            if re.match(r"([TSFtsf]\d{6})", self.argparser.user_entry):
+            if self.is_firm_id(self.argparser.user_entry):
                 matched_firm_id = [
                     firm_id
                     for firm_id in self.profile_firm_id_name_map.keys()
@@ -160,5 +171,5 @@ class ProfileSwitcher:
 
 
 if __name__ == "__main__":
-    config = AwsConfig()
-    ProfileSwitcher(config).run()
+    aws_config = AwsConfig()
+    ProfileSwitcher(aws_config).run()
