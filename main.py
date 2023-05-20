@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
+"""This command line utility makes it easy to switch between AWS profiles on the command line.
+
+usage: awp [-a] [profile_name]
+
+positional arguments:
+  profile_name  A short profile name e.g. ab, f100530, testres2, live-app, shared, legacy
+
+optional arguments:
+  -a, --admin   Switches to the admin version of the profile
+
+# TODO add --console/-c flag that prints a link to switch to this profile in the AWS Console
+# TODO add --list/-l  flag that prints the list of unique profile names in order
+"""
+
 
 import argparse
-import sys
 import configparser
 import dataclasses
 import os
 import re
+import sys
 from typing import Optional
 
 
 class AwsConfig:
+    """Object representing the ~/.aws/config file and the profiles it contains."""
+
     USER = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
 
     @dataclasses.dataclass
@@ -20,8 +36,7 @@ class AwsConfig:
             profile_name: e.g. es_lz_main-euwest1-cust-F100060
             admin_profile_name: e.g. es_lz_main-euwest1-cust-F100060_admin
             account_name: e.g. brown
-            firm_id: e.g. f100060. Can be None for non-client profiles
-
+            firm_id: e.g. F100060. Can be None for non-client profiles
         """
 
         profile_name: str
@@ -30,6 +45,7 @@ class AwsConfig:
         account_name: str
 
     def __init__(self):
+        """Parse the ~/.aws/config file."""
         self.parser = configparser.ConfigParser()
         self.parser.read(f"/Users/{self.USER}/.aws/config")
         self.unique_profile_names = {
@@ -42,100 +58,107 @@ class AwsConfig:
                 profile_name=profile,
                 admin_profile_name=f"{profile}_admin",
                 account_name=self.parser.get(f"profile {profile}", "name"),
-                firm_id=re.search(r"([TSFtsf]\d{6})", profile).group(0)
-                if "cust" in profile
-                else None,
+                # fmt: off
+                firm_id=re.search(r"([TSFtsf]\d{6})", profile).group(0) if "cust" in profile else None,
+                # fmt: on
             )
             for profile in self.unique_profile_names
         ]
 
 
 class ProfileSwitcher:
-    def __init__(self):
-        self.config = AwsConfig()
-        self.profiles = self.config.profiles
-        self.profile_account_name_map = {p.account_name: p for p in self.profiles}
-        self.profile_firm_id_name_map = {p.firm_id: p for p in self.profiles}
-        self.parser = argparse.ArgumentParser(
-            description="Switch AWS profiles like a pro.", add_help=False  # TODO fix
-        )
-        self.parser.add_argument(
-            "profile_name",
-            nargs="?",
-            help="A short profile name e.g. brown, f100060, testres1, live-app, shared",
-        )
-        self.parser.add_argument(
-            "-a",
-            "--admin",
-            action="store_true",
-            help="Switches to the admin version of the profile",
-        )
-        self.parser.add_argument(
-            "-h",
-            "--help",
-            action="store_true",
-            help="Prints this page",
-        )
+    """Main class for the command line utility awp."""
 
-        # TODO add console arg
-        # TODO add login arg
-        # todo split parser into own wrapper object
-        self.args = self.parser.parse_args()
-        self.user_entry = self.args.profile_name
-        self.is_admin = self.args.admin
+    class ArgParser:
+        """Wrapper for Python stdlib argparse."""
+
+        def __init__(self):
+            self.parser = argparse.ArgumentParser(
+                description="Switch AWS profiles like a pro."
+            )
+            self.parser.add_argument(
+                "profile_name",
+                nargs="?",
+                help="A short profile name e.g. brown, f100060, testres1, live-app, shared",
+            )
+            self.parser.add_argument(
+                "-a",
+                "--admin",
+                action="store_true",
+                help="Switches to the admin version of the profile",
+            )
+            self.args = self.parser.parse_args()
+            self.user_entry = self.args.profile_name
+            self.is_admin = self.args.admin
+
+    def __init__(self, config):
+        """Initialise the class with the user's AwsConfig ."""
+        self.config = config
+        self.profile_account_name_map = {
+            p.account_name: p for p in self.config.profiles
+        }
+        self.profile_firm_id_name_map = {p.firm_id: p for p in self.config.profiles}
+        self.argparser = self.ArgParser()
+
+    @staticmethod
+    def return_to_stdout(message):
+        """Returns a message to stdout which is picked up by the eval function in .zshrc."""
+        sys.stdout.write(message)
+        sys.exit()
 
     def activate_profile(self, profile):
-        profile = profile.admin_profile_name if self.is_admin else profile.profile_name
-        sys.stdout.write(f'export AWS_PROFILE="{profile}"')
-        sys.stdout.flush()
-        sys.exit()
+        """Given an AwsProfile object, activate that profile in the user's terminal by setting the env var."""
+        profile = (
+            profile.admin_profile_name
+            if self.argparser.is_admin
+            else profile.profile_name
+        )
+        self.return_to_stdout(f'export AWS_PROFILE="{profile}"')
 
     def unset_profile(self):
-        sys.stdout.write(f"unset AWS_PROFILE")
-        sys.stdout.flush()
-        sys.exit()
+        """Unsets the AWS_PROFILE env var which means no profile is active in the user's terminal."""
+        self.return_to_stdout("unset AWS_PROFILE")
 
     def return_fail_message(self):
-        print(
-            f"echo 'Your entered profile name {self.user_entry} did not match a profile.'"
+        """Returns an error message if no AWS profile can be found from the user's input."""
+        self.return_to_stdout(
+            f"echo 'Your entered profile name `{self.argparser.user_entry}` did not match a profile.'"
         )
-        sys.exit()
 
-    def return_help_message(self):
-        pass  # TODO
-
-    def run(self):
-        if self.user_entry == "unset":
-            self.unset_profile()
-
-        matched_profile = None
+    def match_profile(self):
+        """Given the user input, attempt to match it to a profile in the ~/.aws/config file."""
         try:
-            if re.match(r"([TSFtsf]\d{6})", self.user_entry):
+            if re.match(r"([TSFtsf]\d{6})", self.argparser.user_entry):
                 matched_firm_id = [
-                    id
-                    for id in self.profile_firm_id_name_map.keys()
-                    if self.user_entry.upper() == id
+                    firm_id
+                    for firm_id in self.profile_firm_id_name_map.keys()
+                    if self.argparser.user_entry.upper() == firm_id
                 ][0]
                 matched_profile = self.profile_firm_id_name_map.get(matched_firm_id)
             else:
                 matched_account_name = [
                     name
                     for name in self.profile_account_name_map.keys()
-                    if self.user_entry in name
+                    if self.argparser.user_entry in name
                 ][0]
                 matched_profile = self.profile_account_name_map.get(
                     matched_account_name
                 )
+            return matched_profile
         except IndexError:
-            self.return_fail_message()
+            return None
 
-        if not matched_profile:
-            self.return_fail_message()
+    def run(self):
+        """Runs the ProfileSwitcher command line utility."""
+        if not self.argparser.user_entry:
+            self.unset_profile()
 
-        self.activate_profile(matched_profile)
+        if matched_profile := self.match_profile():
+            self.activate_profile(matched_profile)
+        else:
+            self.return_fail_message()
 
 
 if __name__ == "__main__":
-    # todo context mgr for sys exit
-
-    ProfileSwitcher().run()
+    config = AwsConfig()
+    ProfileSwitcher(config).run()
