@@ -25,7 +25,6 @@ from dataclasses import dataclass
 import os
 import re
 import sys
-from typing import Optional
 
 USER = os.environ["ESSENTIA_USERNAME"].split(".")[0].replace("_", ".")
 
@@ -38,10 +37,12 @@ class AwsConfig:
         """Dataclass representing an AWS Profile stored in ~/.aws/config.
 
         Args:
-            profile_name: e.g. es_lz_main-euwest1-cust-F100060
-            admin_profile_name: e.g. es_lz_main-euwest1-cust-F100060_admin
-            account_name: e.g. brown
-            firm_id: e.g. F100060. Can be None for non-client profiles
+            profile_name: e.g. es_lz_main-eueast1-cust-F123456
+            admin_profile_name: e.g. es_lz_main-eueast1-cust-F123456_admin
+            firm_id: e.g. F123456. Can be None for non-client profiles
+            account_name: e.g. ab
+            account_id: e.g. 123456789012
+            role: e.g. CompanyDeveloper
         """
 
         profile_name: str
